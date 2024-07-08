@@ -11,18 +11,10 @@ fprintf('Initializing...\n');
 %% Set some parameters 
 % Grid size
 N = 100;
-% Physical model('linadv1d','euler1d')
-model = 'linadv1d';
 % Boundary type
 boundary = 'periodic';
 % Discretization method ('1','weno5','crweno5')
 sp_method = 'weno5';
-% Flow variables (if using 'euler1d')
-gamma = 1.4;
-rho_inf = 1.0;
-drho = 0.1;
-u_inf = 0.1;
-p_inf = rho_inf/gamma;
 % Set parameters for RK time integrator
 stages = 5;
 order = 2;
@@ -34,33 +26,6 @@ if (obj_crit == 'acc')
 else
     opt_alg = 'sqp';
 end
-
-%% Initialize grid
-if (strcmp(strtrim(boundary),'periodic'))
-    dx = 1.0/N;
-else
-    dx = 1.0/(N-1);
-end
-x = 0:dx:(N-1)*dx;
-
-%% Initialize solution
-if (strcmp(model,'linadv1d'))
-    nvar = 1;
-    U = sin(x);
-    GetFluxJacobian = @GetFluxJacobian_LinAdv1D;
-elseif (strcmp(model,'euler1d'))
-    nvar = 3;
-    rho = rho_inf+drho*sin(x);
-    u = u_inf*ones(1,size(x,2));
-    p = p_inf*ones(1,size(x,2));
-    e = p/(gamma-1) + 0.5 * rho .* u.^2;
-    U = [rho;rho.*u;e];
-    GetFluxJacobian = @GetFluxJacobian_Euler1D;
-else
-    fprintf('Error: unknown physical model %s\n',model);
-    return;
-end
-ndof = N * nvar;
 
 %% Construct the discretization matrix
 fprintf('Computing discretization matrix.\n');
