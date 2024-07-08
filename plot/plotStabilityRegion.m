@@ -12,7 +12,7 @@ function [contour_matrix] = plotStabilityRegion(ifig,p,lambda,bounds,ls,lw)
 %       * ls:   line style (default '-r')
 %       * lw:   line width (default 2)
 
-if nargin<6 lw=2; end
+if nargin<6 lw=4; end
 if nargin<5 ls='-r'; end
 if nargin<4 bounds=[-9 1 -5 5]; end
 

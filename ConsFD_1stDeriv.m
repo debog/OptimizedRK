@@ -23,9 +23,17 @@ rho_inf = 1.0;
 drho = 0.1;
 u_inf = 0.1;
 p_inf = rho_inf/gamma;
-% Set order and stages for RK time integrator
+% Set parameters for RK time integrator
 stages = 5;
-order = 1;
+order = 2;
+class = 'erk'; % explicit RK
+obj_crit = 'acc'; % truncation error
+num_proc = 4;
+if (obj_crit == 'acc')
+    opt_alg = 'interior-point';
+else
+    opt_alg = 'sqp';
+end
 
 %% Initialize grid
 if (strcmp(strtrim(boundary),'periodic'))
@@ -58,29 +66,15 @@ ndof = N * nvar;
 fprintf('Computing discretization matrix.\n');
 InterpMatrix = GetInterpOperator(N,sp_method,boundary);
 FDMatrix = GetFDOperator(N);
-DiscretMatrix = -FDMatrix*InterpMatrix/dx;
-
-%% Construct the RHS Jacobian matrix
-fprintf('Computing Jacobian.\n');
-RHSJac = zeros(ndof,ndof);
-for i = 1:N
-    for j = 1:N
-        Amat = feval(GetFluxJacobian,U(:,j),gamma);
-        for k = 1:nvar
-            for l = 1:nvar
-                RHSJac(nvar*(i-1)+k,nvar*(j-1)+l) = DiscretMatrix(i,j) * Amat(k,l);
-            end
-        end
-    end
-end
+DiscretMatrix = -FDMatrix*InterpMatrix;
 
 %% Compute and plot the spectrum of the RHS Jacobian matrix
 figure(ifig);
 fprintf('Computing spectrum.\n');
-lambda = eig(RHSJac);
+lambda = eig(DiscretMatrix);
 figure(ifig);
 plot(real(lambda),imag(lambda),'bo');
-title('Eigenvalues of the RHS Jacobian');
+title('Eigenvalues of the discretization matrix');
 axis equal;
 grid on;
 ifig = ifig + 1;
@@ -88,10 +82,7 @@ ifig = ifig + 1;
 %% Compute optimized stability polynomial
 cvx_clear;
 tol = 1.e-2;
-[dt_max, poly_coeff] = opt_poly_bisect(lambda, stages, order, 'chebyshev');
-fprintf('Found stability polynomial with dt_max= %1.3e, CFL = %f\n',dt_max, dt_max/dx);
-plotStabilityRegion(ifig,poly_coeff,dt_max*lambda);
-ifig = ifig + 1;
+[cfl_max, poly_coeff] = opt_poly_bisect(lambda, stages, order, 'chebyshev');
 
 %% Compute ERK method with this stability polynomial
 num_coeffs = stages - order;
@@ -101,9 +92,38 @@ for i = 1:num_coeffs
     p_ind(i) = i+order;
     p_val(i) = poly_coeff(i+order+1);
 end
-rk = rk_opt(stages+1,order,'erk','acc','startvec','smart','solveorderconditions',1,'algorithm','interior-point','poly_coeff_ind',p_ind,'poly_coeff_val',p_val,'np',4);
+rk = rk_opt(  stages, ...
+              order, ...
+              class, ...
+              obj_crit, ...
+              'startvec','smart', ...
+              'solveorderconditions',1, ...
+              'algorithm',opt_alg, ...
+              'poly_coeff_ind',p_ind, ...
+              'poly_coeff_val',p_val, ...
+              'np', num_proc );
+fprintf('Found stability polynomial with CFL = %f\n',cfl_max);
 if (isstruct(rk))
-    fprintf('Found optimized RK method of order %d with %d stages:\n', order, stages+1);
-    plotStabilityRegionRK(ifig,rk,dt_max*lambda);
+    fprintf('Found optimized RK method of order %d with %d stages:\n', order, stages);
+    fprintf('Butcher table:\n');
+    fprintf('  A = \n');
+    for i = 1:stages
+        fprintf('    ');
+        for j = 1:stages
+            fprintf('%1.4f ', rk.A(i,j));
+        end
+        fprintf('\n');
+    end
+    fprintf('  b = \n');
+    fprintf('    ');
+    for j = 1:stages
+        fprintf('%1.4f ', rk.b(j));
+    end
+    fprintf('\n');
+    plotStabilityRegionRK(ifig,rk,cfl_max*lambda);
+    ifig = ifig + 1;
+else
+    fprintf('Unable to find RK method.\n');
+    plotStabilityRegion(ifig,poly_coeff,cfl_max*lambda);
     ifig = ifig + 1;
 end

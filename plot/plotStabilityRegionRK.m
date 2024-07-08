@@ -14,7 +14,7 @@ function [contour_matrix] = plotStabilityRegionRK(ifig,rk,lambda,plotbounds,ls,l
 %       * ls:   line style (default '-r')
 %       * lw:   line width (default 2)
 
-if nargin<6 lw=2; end
+if nargin<6 lw=4; end
 if nargin<5 ls='-r'; end
 if nargin<4 plotbounds=[-9 1 -5 5]; end
 
