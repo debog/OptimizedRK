@@ -17,4 +17,8 @@ git submodule init
 Running
 -------
 
-Run the script `ConsFD_1stDeriv`. The directory `example_output` contains an example solution of a 2nd order, 5-stage explicit RK method that is optimized for the 5th-order WENO scheme. One can change the parameters in `ConsFD_1stDeriv` to try various orders, number of stages, etc.
++ Conservative finite difference discretization of first derivative: Run the script `ConsFD_1stDeriv`. One can change the parameters in `ConsFD_1stDeriv` to try various orders, number of stages, etc.
+
++ Compact finite difference discretization of third derivative: Run the script `CompactFD_3rdDeriv`. 
+
+The directory `example_output` contains some example solutions from these scripts.
