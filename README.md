@@ -17,8 +17,8 @@ git submodule init
 Running
 -------
 
-+ Conservative finite difference discretization of first derivative: Run the script `ConsFD_1stDeriv`. One can change the parameters in `ConsFD_1stDeriv` to try various orders, number of stages, etc.
-
++ Conservative finite difference discretization of first derivative: Run the script `ConsFD_1stDeriv`. 
 + Compact finite difference discretization of third derivative: Run the script `CompactFD_3rdDeriv`. 
 
+One can change the parameters in these scripts to try various orders, number of stages, etc.
 The directory `example_output` contains some example solutions from these scripts.
