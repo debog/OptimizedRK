@@ -1,7 +1,6 @@
 clc;
 clear all;
 close all;
-tic;
 ifig = 1;
 
 % adding paths
@@ -12,14 +11,13 @@ fprintf('Initializing...\n');
 %% Set some parameters 
 % Grid size
 N = 100;
-submethod = 1 ; % 1 for TDCCS; 2 for TDCNCS
-
+% Discretization method ('tdccs8','tdcncs8')
+sp_method = 'tdcncs8'; 
 % Set parameters for RK time integrator
 stages = 4;
 order = 3;
 class = 'erk'; % explicit RK
-% obj_crit = 'acc'; % minimize leading trunction error coefficient
-obj_crit = 'ssp'; % maximize SSP coefficient
+ obj_crit = 'acc'; % minimize leading trunction error coefficient
 num_proc = 4;   % num_proc = 4;
 if (obj_crit == 'acc')
     opt_alg = 'interior-point';
@@ -30,37 +28,10 @@ end
 %% Plot the spectrum of the RHS Jacobian matrix
 figure(ifig);
 fprintf('Computing spectrum.\n');
-switch submethod
- case 1
-% Order 8 TDCCS
-    theta = linspace(0,2*pi,N);
-    coeff_a=58021/14120; coeff_b = -109007/28240; coeff_c=1029/28240; coeff_alpha = -1261/3530 ;
-    denom = (1+2*coeff_alpha*cos(theta)) ;
-    num = -(( 2*coeff_a*(8.*sin(theta/2)-4.*sin(theta)) ) + ( 2*coeff_b/5*(12.*sin(theta)-8.*sin(3*theta/2))) + ( 2*coeff_c/35*(20.*sin(theta)-8.*sin(5*theta/2))));
-    lambda = ((0.*theta)+1i*(num./denom)).';
-    % lambda = 1i*linspace(-147.168,0,N).'; % or use this
-    disp('TDCCS-T8 ')
- case 2
-% Order 8 TDCNCS
-    theta = linspace(0,2*pi,N);
-    coeff_a=2367/1180; coeff_b = -167/1180; coeff_c=1/236; coeff_alpha = 205/472 ;
-    denom = (1+(2*coeff_alpha*cos(theta))) ;
-    num = -(( coeff_a*(2.*sin(theta)-1.*sin(2*theta)) ) + ( coeff_b/4*(3.*sin(theta)-1.*sin(3*theta)) ) + ( coeff_c/10*(4.*sin(theta)-1.*sin(4*theta)) )  );
-    lambda = ((0.*theta)+1i*(num./denom)).';
-    disp('TDCNCS-T8 ')
- otherwise
-    disp('Unknown kind of compact scheme, exiting the code...')
-    return
-end     
-
-% figure(ifig);
-% plot(real(lambda),imag(lambda),'bo');
-% title('Eigenvalues of the discretization matrix');
-% axis equal;
-% grid on;
-% ifig = ifig + 1;
+lambda = Get3rdDerivSpectrum(N,sp_method);
 
 %% Compute optimized stability polynomial
+fprintf('Computing optimized stability polynomial.\n');
 cvx_clear;
 tol = 1.e-2;
 [cfl_max, poly_coeff] = opt_poly_bisect(lambda, stages, order, 'monomial');
@@ -109,4 +80,3 @@ else
     plotStabilityRegion(ifig,poly_coeff,cfl_max*lambda);
     ifig = ifig + 1;
 end
-toc
